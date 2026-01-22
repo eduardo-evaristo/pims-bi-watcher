@@ -1,4 +1,4 @@
-import odbc from 'odbc';
+import * as odbc from 'odbc';
 
 let connection = null;
 let dbPath = null;
