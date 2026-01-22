@@ -50,13 +50,39 @@ export async function updateNotaSap(dbPath, id, numeroNota) {
     const formattedNumeroNota = formatValue(numeroNota);
     const formattedId = formatValue(id);
     
-    const sql = `UPDATE [Notas de Manutenção] SET [Nº da nota no SAP] = ${formattedNumeroNota} WHERE ID = ${formattedId}`;
+    // Try different SQL syntaxes if one fails
+    const sqlVariants = [
+      `UPDATE [Notas de Manutenção] SET [Nº da nota no SAP] = ${formattedNumeroNota} WHERE ID = ${formattedId}`,
+      `UPDATE [Notas de Manutenção] SET [Nº da nota no SAP]=${formattedNumeroNota} WHERE ID=${formattedId}`,
+      `UPDATE [Notas de Manutenção] SET [Nº da nota no SAP]=${formattedNumeroNota} WHERE [ID]=${formattedId}`
+    ];
     
-    // Execute the update
-    await connection.query(sql);
+    let lastError = null;
     
-    console.log(`Updated: ID=${id}, NumeroNota=${numeroNota}`);
+    for (const sql of sqlVariants) {
+      try {
+        // Log the exact SQL being executed
+        console.log(`Executing SQL: ${sql}`);
+        
+        // Use query() as it's more reliable for Access via ODBC
+        const result = await connection.query(sql);
+        
+        console.log(`✅ Updated: ID=${id}, NumeroNota=${numeroNota}`);
+        return; // Success, exit function
+      } catch (sqlError) {
+        lastError = sqlError;
+        console.log(`SQL variant failed, trying next...`);
+        continue;
+      }
+    }
+    
+    // If all variants failed, throw the last error
+    throw lastError;
+    
   } catch (error) {
+    // Log full error for debugging
+    console.error(`❌ Error details:`, error);
+    
     // If connection error, try to reconnect and retry once
     if (error.message.includes('connection') || error.message.includes('Error connecting')) {
       console.log(`Connection issue detected, attempting to reconnect...`);
@@ -69,8 +95,10 @@ export async function updateNotaSap(dbPath, id, numeroNota) {
         const formattedId = formatValue(id);
         const sql = `UPDATE [Notas de Manutenção] SET [Nº da nota no SAP] = ${formattedNumeroNota} WHERE ID = ${formattedId}`;
         
+        console.log(`Retrying SQL: ${sql}`);
         await connection.query(sql);
-        console.log(`Updated (after reconnect): ID=${id}, NumeroNota=${numeroNota}`);
+        
+        console.log(`✅ Updated (after reconnect): ID=${id}, NumeroNota=${numeroNota}`);
         return;
       } catch (retryError) {
         throw new Error(`Failed to update record ID=${id} after retry: ${retryError.message}`);

@@ -12,8 +12,9 @@ function buildConnectionString(path) {
   // Normalize path separators for Windows
   const normalizedPath = path.replace(/\//g, '\\');
   
-  // Try ACE driver first (supports both .mdb and .accdb)
-  return `Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=${normalizedPath};`;
+  // Try ACE driver with extended options for better compatibility
+  // ExtendedAnsiSQL=1 enables ANSI SQL-92 features
+  return `Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=${normalizedPath};ExtendedAnsiSQL=1;`;
 }
 
 /**
