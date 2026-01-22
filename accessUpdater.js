@@ -46,38 +46,21 @@ export async function updateNotaSap(dbPath, id, numeroNota) {
   try {
     connection = await getConnection(dbPath);
     
-    // Formata valores diretamente na query (mesma abordagem do código de referência)
-    const formattedNumeroNota = formatValue(numeroNota);
+    // Format numeroNota for double-quoted Access SQL (escape double quotes)
+    const escapedNumeroNota = String(numeroNota || '').trim().replace(/"/g, '""');
+    const formattedNumeroNota = `"${escapedNumeroNota}"`;
     const formattedId = formatValue(id);
     
-    // Try different SQL syntaxes if one fails
-    const sqlVariants = [
-      `UPDATE [Notas de Manutenção] SET [Nº da nota no SAP] = "${formattedNumeroNota}" WHERE ID = ${formattedId}`,
-      `UPDATE [Notas de Manutenção] SET [Nº da nota no SAP]="${formattedNumeroNota}" WHERE ID=${formattedId}`,
-      `UPDATE [Notas de Manutenção] SET [Nº da nota no SAP]="${formattedNumeroNota}" WHERE [ID]=${formattedId}`
-    ];
+    // Single SQL statement
+    const sql = `UPDATE [Notas de Manutenção] SET [Nº da nota no SAP] = ${formattedNumeroNota} WHERE ID = ${formattedId}`;
     
-    let lastError = null;
+    // Log the exact SQL being executed
+    console.log(`Executing SQL: ${sql}`);
     
-    for (const sql of sqlVariants) {
-      try {
-        // Log the exact SQL being executed
-        console.log(`Executing SQL: ${sql}`);
-        
-        // Use query() as it's more reliable for Access via ODBC
-        const result = await connection.query(sql);
-        
-        console.log(`✅ Updated: ID=${id}, NumeroNota=${numeroNota}`);
-        return; // Success, exit function
-      } catch (sqlError) {
-        lastError = sqlError;
-        console.log(`SQL variant failed, trying next...`);
-        continue;
-      }
-    }
+    // Use query() as it's more reliable for Access via ODBC
+    await connection.query(sql);
     
-    // If all variants failed, throw the last error
-    throw lastError;
+    console.log(`✅ Updated: ID=${id}, NumeroNota=${numeroNota}`);
     
   } catch (error) {
     // Log full error for debugging
@@ -93,7 +76,8 @@ export async function updateNotaSap(dbPath, id, numeroNota) {
         
         // getConnection() will retry internally (3 attempts by default)
         connection = await getConnection(dbPath);
-        const formattedNumeroNota = formatValue(numeroNota);
+        const escapedNumeroNota = String(numeroNota || '').trim().replace(/"/g, '""');
+        const formattedNumeroNota = `"${escapedNumeroNota}"`;
         const formattedId = formatValue(id);
         const sql = `UPDATE [Notas de Manutenção] SET [Nº da nota no SAP] = ${formattedNumeroNota} WHERE ID = ${formattedId}`;
         
