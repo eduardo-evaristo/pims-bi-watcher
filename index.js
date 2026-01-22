@@ -1,13 +1,22 @@
 import chokidar from 'chokidar';
 import { processFile } from './processor.js';
 import { updateFileWithOkStatus } from './fileWriter.js';
+import { updateNotaSap } from './accessUpdater.js';
+import { closeConnection } from './accessConnection.js';
 
 // Get the file path from environment variable
 const filePath = process.env.WATCH_FILE;
+const dbPath = process.env.ACCESS_DB_PATH;
 
 if (!filePath) {
   console.error('Error: WATCH_FILE environment variable is not set');
   console.error('Please set WATCH_FILE in your .env file');
+  process.exit(1);
+}
+
+if (!dbPath) {
+  console.error('Error: ACCESS_DB_PATH environment variable is not set');
+  console.error('Please set ACCESS_DB_PATH in your .env file');
   process.exit(1);
 }
 
@@ -25,8 +34,11 @@ async function executeFlow() {
     
     if (notOkObjects.length > 0) {
       for (const item of notOkObjects) {
-        // TODO: Process each item here
-        console.log(`Processing: ID=${item.id}, NumeroNota=${item.numeroNota}, Status=${item.status}`);
+        try {
+          await updateNotaSap(dbPath, item.id, item.numeroNota);
+        } catch (error) {
+          console.error(`Error updating item ID=${item.id}: ${error.message}`);
+        }
       }
       
       // Update file: add ;OK to lines that don't have it
@@ -60,6 +72,7 @@ watcher
 process.on('SIGINT', () => {
   console.log('\nShutting down watcher...');
   watcher.close();
+  closeConnection();
   process.exit(0);
 });
 
