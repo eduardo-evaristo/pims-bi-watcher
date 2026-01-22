@@ -1,0 +1,17 @@
+{
+  "name": "sap-watcher",
+  "version": "1.0.0",
+  "description": "Simple file watcher using chokidar",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file=.env index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "chokidar": "^3.6.0"
+  }
+}
+
