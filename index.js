@@ -35,7 +35,7 @@ async function executeFlow() {
     if (notOkObjects.length > 0) {
       for (const item of notOkObjects) {
         try {
-          await updateNotaSap(dbPath, item.id, item.numeroNota);
+          await updateNotaSap("C:\\Users\\gmenegue\\Documents\\Database.accdb", item.id, item.numeroNota);
         } catch (error) {
           // Log error but continue processing other items
           console.error(`Error updating item ID=${item.id}: ${error.message}`);

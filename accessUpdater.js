@@ -48,7 +48,7 @@ export async function updateNotaSap(dbPath, id, numeroNota) {
     
     // Format numeroNota for double-quoted Access SQL (escape double quotes)
     const escapedNumeroNota = String(numeroNota || '').trim().replace(/"/g, '""');
-    const formattedNumeroNota = `"${escapedNumeroNota}"`;
+    const formattedNumeroNota = `${escapedNumeroNota}`;
     const formattedId = formatValue(id);
     
     // Single SQL statement
@@ -77,9 +77,9 @@ export async function updateNotaSap(dbPath, id, numeroNota) {
         // getConnection() will retry internally (3 attempts by default)
         connection = await getConnection(dbPath);
         const escapedNumeroNota = String(numeroNota || '').trim().replace(/"/g, '""');
-        const formattedNumeroNota = `"${escapedNumeroNota}"`;
+        const formattedNumeroNota = `${escapedNumeroNota}`;
         const formattedId = formatValue(id);
-        const sql = `UPDATE [Notas de Manutenção] SET [Nº da nota no SAP] = ${formattedNumeroNota} WHERE ID = ${formattedId}`;
+        const sql = `UPDATE [Notas de Manutenção] SET [Nº da nota no SAP] = ${formattedNumeroNota} WHERE [ID] = ${formattedId}`;
         
         console.log(`Retrying SQL: ${sql}`);
         await connection.query(sql);
