@@ -37,15 +37,25 @@ async function executeFlow() {
         try {
           await updateNotaSap(dbPath, item.id, item.numeroNota);
         } catch (error) {
+          // Log error but continue processing other items
           console.error(`Error updating item ID=${item.id}: ${error.message}`);
+          // Don't rethrow - continue with next item
         }
       }
       
       // Update file: add ;OK to lines that don't have it
-      await updateFileWithOkStatus(filePath);
+      // Wrap in try-catch to prevent process exit if file update fails
+      try {
+        await updateFileWithOkStatus(filePath);
+      } catch (error) {
+        console.error(`Error updating file status: ${error.message}`);
+        // Don't rethrow - continue watching
+      }
     }
   } catch (error) {
+    // Log error but don't exit - keep the watcher running
     console.error(`Error in flow execution: ${error.message}`);
+    console.error('Continuing to watch for file changes...');
   }
 }
 
@@ -58,15 +68,42 @@ const watcher = chokidar.watch(filePath, {
 watcher
   .on('add', async (path) => {
     console.log(`File added: ${path}`);
-    await executeFlow();
+    try {
+      await executeFlow();
+    } catch (error) {
+      console.error(`Error handling file add event: ${error.message}`);
+      // Don't exit - keep watching
+    }
   })
   .on('change', async (path) => {
     console.log(`File changed: ${path}`);
-    await executeFlow();
+    try {
+      await executeFlow();
+    } catch (error) {
+      console.error(`Error handling file change event: ${error.message}`);
+      // Don't exit - keep watching
+    }
   })
   .on('unlink', path => console.log(`File removed: ${path}`))
-  .on('error', error => console.error(`Watcher error: ${error}`))
+  .on('error', error => {
+    console.error(`Watcher error: ${error.message}`);
+    // Don't exit on watcher errors - try to continue
+  })
   .on('ready', () => console.log('Watcher is ready'));
+
+// Handle unhandled promise rejections to prevent process exit
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  console.error('Continuing to run - process will not exit');
+  // Don't exit - just log the error
+});
+
+// Handle uncaught exceptions (but still log them)
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  console.error('Continuing to run - process will not exit');
+  // Don't exit - just log the error
+});
 
 // Handle graceful shutdown
 process.on('SIGINT', async () => {

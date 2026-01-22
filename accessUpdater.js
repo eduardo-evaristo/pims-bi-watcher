@@ -52,9 +52,9 @@ export async function updateNotaSap(dbPath, id, numeroNota) {
     
     // Try different SQL syntaxes if one fails
     const sqlVariants = [
-      `UPDATE [Notas de Manutenção] SET [Nº da nota no SAP] = ${formattedNumeroNota} WHERE ID = ${formattedId}`,
-      `UPDATE [Notas de Manutenção] SET [Nº da nota no SAP]=${formattedNumeroNota} WHERE ID=${formattedId}`,
-      `UPDATE [Notas de Manutenção] SET [Nº da nota no SAP]=${formattedNumeroNota} WHERE [ID]=${formattedId}`
+      `UPDATE [Notas de Manutenção] SET [Nº da nota no SAP] = "${formattedNumeroNota}" WHERE ID = ${formattedId}`,
+      `UPDATE [Notas de Manutenção] SET [Nº da nota no SAP]="${formattedNumeroNota}" WHERE ID=${formattedId}`,
+      `UPDATE [Notas de Manutenção] SET [Nº da nota no SAP]="${formattedNumeroNota}" WHERE [ID]=${formattedId}`
     ];
     
     let lastError = null;
@@ -84,12 +84,14 @@ export async function updateNotaSap(dbPath, id, numeroNota) {
     console.error(`❌ Error details:`, error);
     
     // If connection error, try to reconnect and retry once
-    if (error.message.includes('connection') || error.message.includes('Error connecting')) {
+    // getConnection() now has its own retry logic, but we'll still try one more time here
+    if (error.message.includes('connection') || error.message.includes('Error connecting') || error.message.includes('Failed to connect')) {
       console.log(`Connection issue detected, attempting to reconnect...`);
       try {
         // Force new connection by closing existing one
         await closeConnection();
         
+        // getConnection() will retry internally (3 attempts by default)
         connection = await getConnection(dbPath);
         const formattedNumeroNota = formatValue(numeroNota);
         const formattedId = formatValue(id);
@@ -101,11 +103,17 @@ export async function updateNotaSap(dbPath, id, numeroNota) {
         console.log(`✅ Updated (after reconnect): ID=${id}, NumeroNota=${numeroNota}`);
         return;
       } catch (retryError) {
-        throw new Error(`Failed to update record ID=${id} after retry: ${retryError.message}`);
+        // Don't throw - just log the error so the process continues
+        console.error(`❌ Failed to update record ID=${id} after reconnect retry: ${retryError.message}`);
+        // Return instead of throwing to prevent process exit
+        return;
       }
     }
     
-    throw new Error(`Failed to update record ID=${id}: ${error.message}`);
+    // For other errors, log but don't throw to prevent process exit
+    console.error(`❌ Failed to update record ID=${id}: ${error.message}`);
+    // Return instead of throwing to prevent process exit
+    return;
   }
 }
 
