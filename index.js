@@ -33,9 +33,13 @@ async function executeFlow() {
     console.log(`Found ${notOkObjects.length} items that are not OK`);
     
     if (notOkObjects.length > 0) {
+      const successfullyProcessed = [];
+      
       for (const item of notOkObjects) {
         try {
-          await updateNotaSap("C:\\Users\\gmenegue\\Documents\\Database.accdb", item.id, item.numeroNota);
+          await updateNotaSap(dbPath, item.id, item.numeroNota);
+          // Track successfully processed items
+          successfullyProcessed.push(item);
         } catch (error) {
           // Log error but continue processing other items
           console.error(`Error updating item ID=${item.id}: ${error.message}`);
@@ -43,13 +47,15 @@ async function executeFlow() {
         }
       }
       
-      // Update file: add ;OK to lines that don't have it
+      // Update file: add ; OK before . for each successfully processed record
       // Wrap in try-catch to prevent process exit if file update fails
-      try {
-        await updateFileWithOkStatus(filePath);
-      } catch (error) {
-        console.error(`Error updating file status: ${error.message}`);
-        // Don't rethrow - continue watching
+      if (successfullyProcessed.length > 0) {
+        try {
+          await updateFileWithOkStatus(filePath, successfullyProcessed);
+        } catch (error) {
+          console.error(`Error updating file status: ${error.message}`);
+          // Don't rethrow - continue watching
+        }
       }
     }
   } catch (error) {
