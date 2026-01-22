@@ -8,7 +8,8 @@ import { readFileContent } from './fileReader.js';
  */
 export async function updateFileWithOkStatus(filePath) {
   try {
-    const content = await readFileContent(filePath);
+    // Retry up to 3 times with 5 second delay for EBUSY errors
+    const content = await readFileContent(filePath, 3, 5000);
     const lines = content.split(/\r?\n/);
     const updatedLines = lines.map((line, index) => {
       const trimmedLine = line.trim();
