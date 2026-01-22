@@ -69,10 +69,10 @@ watcher
   .on('ready', () => console.log('Watcher is ready'));
 
 // Handle graceful shutdown
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
   console.log('\nShutting down watcher...');
   watcher.close();
-  closeConnection();
+  await closeConnection();
   process.exit(0);
 });
 

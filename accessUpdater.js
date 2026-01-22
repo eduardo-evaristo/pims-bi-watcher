@@ -9,11 +9,11 @@ import { getConnection } from './accessConnection.js';
  */
 export async function updateNotaSap(dbPath, id, numeroNota) {
   try {
-    const connection = getConnection(dbPath);
+    const connection = await getConnection(dbPath);
     
     const sql = `UPDATE [Notas de Manutenção] SET [Nº da nota no SAP] = ? WHERE ID = ?`;
     
-    await connection.execute(sql, [numeroNota, id]);
+    await connection.query(sql, [numeroNota, id]);
     console.log(`Updated: ID=${id}, NumeroNota=${numeroNota}`);
   } catch (error) {
     throw new Error(`Failed to update record ID=${id}: ${error.message}`);
